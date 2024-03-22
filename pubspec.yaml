@@ -10,7 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
 
-  app_settings: ^5.1.1
+  # app_settings: any
   firebase_core: ^2.27.1
   firebase_messaging: ^14.7.20
   flutter_local_notifications: ^17.0.0
