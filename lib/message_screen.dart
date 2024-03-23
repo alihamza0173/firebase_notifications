@@ -12,12 +12,7 @@ class MessageScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Notification")),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text("$_message"),
-        ],
-      ),
+      body: Center(child: Text("$_message")),
     );
   }
 }
