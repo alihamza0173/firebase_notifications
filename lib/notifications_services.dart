@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 // import 'package:app_settings/app_settings.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_notifications/message_screen.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 Future<void> _handleBackgroundMessage(RemoteMessage message) async {
@@ -20,12 +23,12 @@ class NotificationsService {
   final FlutterLocalNotificationsPlugin _localNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
-  Future initNotifications() async {
+  Future initNotifications(BuildContext context) async {
     await _getRequest();
     _getDeviceToken().then((value) => print('FCM Token: $value'));
     _isTokenRefreshed();
-    _initFirebaseNotifications();
-    _initLocalNotifications();
+    _initFirebaseNotifications(context);
+    _setupOnNotificationTap(context);
   }
 
   Future _getRequest() async {
@@ -60,17 +63,31 @@ class NotificationsService {
     });
   }
 
-  void _initFirebaseNotifications() {
-    FirebaseMessaging.onMessage.listen((message) {
-      print("Notification Received");
-      _printNotificationMessage(message);
-      if (message.notification != null) _showNotification(message);
-    });
+  void _initFirebaseNotifications(BuildContext context) {
     FirebaseMessaging.onBackgroundMessage(_handleBackgroundMessage);
+    FirebaseMessaging.onMessage.listen((message) {
+      _printNotificationMessage(message);
+      if (Platform.isAndroid) {
+        _initLocalNotifications(context, message);
+        _showNotification(message);
+      } else {
+        _forgroundMessage();
+      }
+    });
   }
 
-  // These are because notifications don't show in forground
-  void _initLocalNotifications() {
+  // For iOS
+  Future _forgroundMessage() async {
+    await FirebaseMessaging.instance
+        .setForegroundNotificationPresentationOptions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+  }
+
+  // These are because notifications don't show in forground for Android
+  void _initLocalNotifications(BuildContext context, RemoteMessage message) {
     var androidInitSettings =
         const AndroidInitializationSettings("@mipmap/ic_launcher");
     var iosInitSettings = const DarwinInitializationSettings();
@@ -81,7 +98,9 @@ class NotificationsService {
     );
     _localNotificationsPlugin.initialize(
       initSettings,
-      onDidReceiveNotificationResponse: (details) {},
+      onDidReceiveNotificationResponse: (details) {
+        _handleMessageOnTap(context, message.data['msg']);
+      },
     );
   }
 
@@ -111,6 +130,27 @@ class NotificationsService {
       message.notification?.title,
       message.notification?.body,
       notificationDetails,
+    );
+  }
+
+  Future<void> _setupOnNotificationTap(BuildContext context) async {
+    RemoteMessage? message = await _messaging.getInitialMessage();
+
+    if (message != null) {
+      _handleMessageOnTap(context, message.data['msg']);
+    }
+
+    FirebaseMessaging.onMessageOpenedApp.first.then(
+      (value) => _handleMessageOnTap(context, value.data['msg']),
+    );
+  }
+
+  void _handleMessageOnTap(BuildContext context, String? message) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MessageScreen(message),
+      ),
     );
   }
 }

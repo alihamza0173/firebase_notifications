@@ -13,7 +13,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void initState() {
-    _notificationsService.initNotifications();
+    _notificationsService.initNotifications(context);
     super.initState();
   }
 
