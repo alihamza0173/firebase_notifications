@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:firebase_notifications/notifications_services.dart';
 import 'package:flutter/material.dart';
@@ -12,12 +13,28 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  late final AppLifecycleListener _appLifecycleListener;
   final NotificationsService _notificationsService = NotificationsService();
 
   @override
   void initState() {
+    _appLifecycleListener = AppLifecycleListener(
+      onDetach: () => log('Detached'),
+      onHide: () => log('Hide'),
+      onInactive: () => log('Inactive'),
+      onPause: () => log('Pause'),
+      onRestart: () => log('Restart'),
+      onResume: () => log('Resume'),
+      onShow: () => log('Show'),
+    );
     _notificationsService.initNotifications(context);
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    _appLifecycleListener.dispose();
+    super.dispose();
   }
 
   @override
